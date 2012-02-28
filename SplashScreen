@@ -1,0 +1,99 @@
+//The starting screen. For name awareness. 
+class SplashScreen{
+  //Image.
+  PImage splash;
+  
+  //State of the screen.
+  byte state;
+  
+  //How long you want each fade to be.
+  int fadeLength;
+  
+  //How long you want the image clearly displayed, and when
+  //it started.
+  int clearLength;
+  int frameClearStarted;
+  
+  //Variables used to modulate the opacity of the mask.
+  float currentFade, fadeUnit;
+  
+  //So we know when the screen is done.
+  boolean done;
+  
+  
+  public SplashScreen(int fadeLength, int clearLength ){
+    //Load in the fade and clear lengths, in frames.
+    this.fadeLength = fadeLength;
+    this.clearLength = clearLength;
+    
+    //Start the screen at the first state.
+    state = 0;
+    
+    //Set the initial opacity to max, since we start by fading in.
+    currentFade = 255;
+    
+    //Set the amount the screen should fade each frame.
+    fadeUnit = 255/fadeLength;
+    
+    //Load the splash screen image.
+    splash = loadImage("splash.jpg");
+  }
+  
+  
+  public void handle(){
+    switch(state){
+      //Fading in.
+      case 0://Display the image.
+             image(splash, 0, 0);
+             noStroke();
+             
+             //mask it.
+             fill(255, 255, 255, currentFade);
+             rect(0, 0, width, height);
+             
+             //Decrement the current opacity.
+             currentFade -= fadeUnit;
+             
+             //if the image is completely clear, 
+             //set the value the clear started and move to the next state.
+             if(currentFade <= 0){
+               state = 1;
+               mousePressed = false;
+               frameClearStarted = frameCount;
+             }
+             if(key == ' ' || mousePressed){
+               state = 2;
+             }
+             break;
+      case 1://Display the image.
+             image(splash, 0, 0);
+             if(frameCount == frameClearStarted + clearLength || key == ' ' || mousePressed){
+               mousePressed = false;
+               state = 2;
+             }
+             break;
+      case 2://Display the image.
+             image(splash, 0, 0);
+             noStroke();
+             
+             //Mask it.
+             fill(255, 255, 255, currentFade);
+             rect(0, 0, width, height);
+             
+             //increment the current opacity.
+             currentFade += fadeUnit;
+             
+             //if the image is completely covered, set done to true.
+             if(currentFade >= 255){
+               done = true;
+             }
+             //cancel out potential keyboard input.
+             key = 0;
+    }
+  }
+  
+  //Return whether the screen is done or not.
+  public boolean isDone(){
+    return done;
+  }
+}
