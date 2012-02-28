@@ -1,0 +1,136 @@
+class Slider{
+  //This class draws a slider using Processing's drawing commands.
+  
+  //Location
+  float locX;
+  float locY;
+  
+  //Thickness, in px.
+  float sThick; 
+  
+  //Length, in px.
+  float sLength;
+  
+  //The slide is a square, so it only has one size dimension.
+  float slideDim;
+  
+  //Color of the inside of the rail. This is modified based
+  //On the value of the slider.
+  color railFill;
+  //Color of the rail outline.
+  color rail;
+  //Color of the slide outline.
+  color slide;
+  
+  //Hue of the rail outline.
+  float railHue;
+  
+  //Current value.
+  float val;
+  //Maximimum value.
+  float maxVal;
+  //Minimum value.
+  float minVal;
+  
+  //The state of the rail.
+  int state;
+  
+  //Font that the label is drawn in.
+  PFont valDisp;
+  //String representing the label.
+  String label;
+  
+  public Slider(float locX, float locY, float sThick, float sLength, float minVal, float maxVal, float railHue, PFont valDisp, String label){
+    
+    //Load in all the things.
+    this.locX = locX;
+    this.locY = locY;
+    this.sThick = sThick;
+    this.sLength = sLength;
+    this.minVal = minVal;
+    this.maxVal = maxVal;
+    this.railHue = railHue;
+    this.valDisp = valDisp;
+    this.label = label;
+    
+    //Initialize the value to zero.
+    val= 0;
+    //State by default should be zero.
+    state = 0;
+    
+    //Make the slide as wide as the rail.
+    slideDim = sThick;
+    
+    colorMode(RGB);
+    rail = color(0, 0, 0);
+    slide = color(50,50,50);
+  }
+  
+  public void setValue(float newVal){
+    if(newVal >= minVal && newVal <= maxVal){
+      val = newVal;
+    }
+  }
+  
+  public void handle(){
+ 
+    //mouse control
+    if(mousePressed){
+      if(mouseY >= locY - (slideDim/6) && mouseY <= locY + (sThick+(slideDim/6))){
+        if(mouseX >= locX && mouseX <= locX+sLength){
+          state = 2;
+          setValue((mouseX - locX) * (maxVal/sLength));
+        }
+      }
+    }
+  
+    //drawing
+    colorMode(HSB);
+    railFill = color(railHue, val*(255/maxVal), 255);
+    colorMode(RGB);
+    switch(state){
+      case 0 : strokeWeight(1);
+              textFont(valDisp, 12);
+              fill(0);
+              text(label, locX+1, locY-4);
+              fill(255);
+              text(label, locX, locY-5);
+              stroke(255);
+              fill(railFill);
+              rect(locX, locY, sLength, sThick);
+              noFill();
+              stroke((255)*.6);
+              rect(locX + val*((sLength-slideDim)/maxVal), locY, slideDim, slideDim);
+              break;
+              
+      case 1 : strokeWeight(1); 
+              textFont(valDisp, 12);
+              fill(0);
+              text(label, locX+1, locY-4);
+              fill(255);
+              text(label, locX, locY-5);
+              stroke(255);
+              fill(railFill);
+              rect(locX, locY, sLength, sThick);
+              noFill();
+              stroke((255)*.6);
+              rect(locX + val*((sLength-slideDim)/maxVal), locY, slideDim, slideDim);
+              break;
+              
+      case 2 : strokeWeight(2);
+              textFont(valDisp, 12);
+              fill(0);
+              text(label, locX+1, locY-4);
+              fill(255);
+              text(label, locX, locY-5);
+              stroke(255);
+              fill(railFill);
+              rect(locX, locY, sLength, sThick);
+              noFill();
+              stroke((255)*.6);
+              rect(locX + val*((sLength-slideDim)/maxVal), locY, slideDim, slideDim);
+              strokeWeight(1);
+              break;
+    } 
+  }
+}
