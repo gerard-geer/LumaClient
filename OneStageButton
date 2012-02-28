@@ -1,0 +1,143 @@
+//It's a one stage button, meaning it doesn't have a pop up dialog.
+class OneStageButton{
+  //This button takes a black and transp. image and
+  //makes a button out of it. It shows its different states
+  //by changing the color of its background.
+  
+  
+  //Location of the button.
+  float locx;
+  float locy;
+  
+  //Location of the popup text vertically.
+  //Since it scrolls across the screen off both sides,
+  //we automatically assume messx to be 0.
+  float messx;
+  float messy;
+  
+  //Button image.
+  PImage button;
+  
+  //Size of the button, err, the size of the image.
+  float sizex;
+  float sizey;
+  
+  //State of the button.
+  /*State key:
+  0: Not drawn.
+  1: Up
+  2: Over
+  3: Down
+  */
+  int state;
+  
+  //Hue of the button. Used for the over and down states.
+  int h;
+  
+  
+  //String of the pop up dialog. 
+  String info;
+  
+  //Font of the popup dialog.
+  PFont infoFont;
+  
+  //Size of the popup font.
+  float infoSize;
+  
+  //Scrolling text object.
+  TextScroller popUp;
+  
+  public OneStageButton(float locx, float locy, float messy, PImage button, String info, PFont infoFont, float infoSize, int h){
+    
+    //Load in the things.
+    this.locx = locx;
+    this.locy = locy;
+    this.messx = 0;
+    this.messy = messy;
+    this.button = button;
+    this.info = info;
+    this.h = h;
+    this.infoFont = infoFont;
+    this.infoSize = infoSize;
+    
+    //Set up the size of the button using the dimensions of the button image.
+    sizex = button.width;
+    sizey = button.height;
+    
+    //Initialize the scrolling text.
+    popUp = new TextScroller(messx, messy, info.toCharArray().length*(infoSize*.8), 1.5, info, infoFont, infoSize);
+  }
+    
+  public void handle(int mode){
+    //Mode 0: We don't want the mouse to interact with it, and we don't want to draw it.
+    //Mode 1: We don't want the mouse to interact with it.
+    //Mode 2: We want the mouse to interact.
+    
+    //Mouse interaction. This is where state is modified.
+    if(mode == 0){
+      state = 0;
+    }
+    if(mode == 1){
+      state = 1;
+    }
+    if(mode == 2){
+      state = 1;
+      if(mouseX < locx+sizex && mouseX > locx && mouseY < locy+sizey && mouseY > locy){
+        state = 2;
+        if(mousePressed){
+          state = 3;
+        }
+      }
+      else{
+        state = 1;
+      }
+      
+      //Handle the scrolling text.
+      if(state > 1){
+        if(!popUp.started()){
+          popUp.start();
+        }
+      }
+      else{
+        if(popUp.started()){
+          popUp.stop();
+        }
+      }
+      
+      //Draw the scrolling text.
+      popUp.handle();
+    }
+        
+    
+    //We don't want to draw a stroke around the button.
+    noStroke();
+    
+    //Set the color mode to HSB.
+    colorMode(HSB);
+    
+    switch(state){
+      //Not drawn.
+      case 0: break;
+      //Draw the button in it's up state.
+      case 1: drawBImage(0, 0, 255);
+              break;
+      //Draw the button in its over state.
+      case 2: drawBImage(h, 100, 255);
+              break;   
+      //Draw the button in its down state.
+      case 3: drawBImage(h, 150, 255);
+              break;
+    }
+  }
+  
+  //Draw button.
+  public void drawBImage(float h, float s, float b){
+    fill(h, s, b);
+    rect(locx, locy, sizex, sizey);
+    image(button, locx, locy);
+  }
+  
+  public int state(){
+    return state;
+  }
+}
