@@ -1,0 +1,260 @@
+class TwoStageButton{
+  
+  //Location of the button.
+  float locX;
+  float locY;
+  
+  //Size of the button.
+  float sizebX;
+  float sizebY;
+  
+  //Size of the hovering slider dialog.
+  float sizedX;
+  float sizedY;
+  
+  //The hue used to show the button's various states.
+  int h;
+  
+  //A value ascribed to the button. In this case this represents the pattern.
+  int value;
+  
+  //State of the button.
+  int state;
+  /*State key:
+  0: up.
+  1: over.
+  2: down.
+  */
+  
+  //Image of the button.
+  PImage img;
+  
+  //Image used for the parse button.
+  PImage parseImg;
+  
+  //Image used for the dialog close button.
+  PImage closeImg;
+  
+  //Boolean that represents whether the parameters have been
+  //marked as ready to send.
+  boolean ready;
+  
+  //Boolean representing if the dialog has been opened.
+  boolean dialog;
+  
+  //OneStageButton that sends the pattern and parameters.
+  OneStageButton parse;
+  
+  //Info for parse.
+  String parseInfo;
+  
+  //OneStageButton that closes the pop up dialog.
+  OneStageButton shut;
+  
+  //Info for shut.
+  String shutInfo;
+  
+  //Array of sliders.
+  SliderArray sliders;
+  
+  //Text scroller that scrolls information about the pattern one is choosing.
+  TextScroller info;
+  
+  //String that we will scroll as the button's "helpful information."
+  String scrolling;
+  
+  //Font used for the scrolling text.
+  PFont scrollFont;
+  
+  //Speed of the scrolling.
+  float scrollSpeed;
+  
+  //Size of the scrolling font.
+  float scrollSize;
+  
+  public TwoStageButton(float locX, float locY, int value, PImage img, PImage closeImg, PImage parseImg, String scrolling, PFont scrollFont, float scrollSpeed, float scrollSize, int h){
+    //Load in the things.
+    this.locX = locX;
+    this.locY = locY;
+    this.value = value;
+    this.img  = img;
+    this.parseImg = parseImg;
+    this.closeImg = closeImg;
+    this.h    = h;
+    this.scrolling = scrolling;
+    this.scrollFont = scrollFont;
+    this.scrollSpeed = scrollSpeed;
+    this.scrollSize = scrollSize;
+    
+    //Initialize the size variables.
+    sizebX = img.width;
+    sizebY = img.height;
+    
+    parseInfo = "Sends your selection to the lights.";
+    shutInfo = "Closes the parameter dialog.";
+    
+    
+    //Initialize the slider array.
+    sliders = new SliderArray(locX + sizebX+10, locY-sizebX, 0, -45);
+    
+    //Initialize the scrolling text.
+    info = new TextScroller(0, height-10, scrolling.toCharArray().length*(scrollSize*.5), scrollSpeed, scrolling, scrollFont, scrollSize);
+    
+    //Initialize the dialog buttons.
+    parse = new OneStageButton(locX+60, locY, height-10, parseImg, parseInfo, scrollFont, scrollSize, 100);
+    shut = new OneStageButton(locX+60+parse.sizex, locY, height-10, closeImg, shutInfo, scrollFont, scrollSize, 100);
+  }
+  
+  //Add a parameter slider.
+  public void addParam(String label, PFont labelFont){
+    //The slider is initialized to be ten pixels thick (tall), 100 pixels wide, start at value 0, have a minimum value of zero,
+    //A maximum value of zero, a yellow hue, and use the scrolling font for its labels.
+    sliders.addSlider(10, 100, 0, 0, 255, 210, labelFont, label);
+  }
+  
+  //Has the parse button been clicked?
+  public boolean ready(){
+    return ready;
+  }
+  
+  public int state(){
+    return state;
+  }
+  
+  //Returns the value ascribed to the button, and then each of the parameters in the form of an array.
+  //As we know, we need 4 parameters to parse, so we fill up empty parameter slots with 0s.
+  public int[] getValues(){
+    int[] toReturn = new int[5];
+    toReturn[0] = value;
+    for(int i = 0; i < 4; i++){
+      try{
+        if(i<sliders.slides.size() && ready){
+          toReturn[i+1] = (int)sliders.getValue(i);
+        }
+        else{
+          toReturn[i+1] = 0;
+        }
+      }
+      catch(Exception e){
+        toReturn[i+1] = 0;
+      }
+    }
+    //We don't want to report these values more than once, so we reset ready.
+    ready = false;      
+    return toReturn;
+  }
+  
+
+  public void handle(int mode){
+    //Mode key:
+    //0: Only display first stage, no interaction.
+    //1: Enable interaction.
+    //Mouse interaction with the first stage.
+    if(mode == 1){
+      if(!dialog){
+        if(mouseX > locX && mouseX < locX+sizebX){
+          if(mouseY > locY && mouseY < locY+sizebY){
+            if(mousePressed){
+              state = 2;
+              dialog = true;
+              if(!info.started()){
+                info.start();
+              }
+            }
+            else{
+              state = 1;
+            }
+          }
+          else{
+            state = 0;
+            if(info.started()){
+              info.stop();
+            }
+          }
+        }
+        else{
+          state = 0;
+          if(info.started()){
+            info.stop();
+          }
+        }
+      }
+      else{
+        if(!info.started()){
+          info.start();
+        }
+        state = 2;
+      }
+    }
+    else{
+      state = 0;
+    }
+    
+    //Draw button elements.
+    noStroke();
+    colorMode(HSB);
+    switch(state){
+      case 0: drawBImage(0, 0, 255);
+              break;
+              
+      case 1: drawBImage(h, 80, 255);
+              if(!info.started()){
+                info.start();
+              }
+              info.handle();
+              break;
+              
+      case 2: drawBImage(h, 255, 255);
+              //Draw slider pan.
+              drawSliderPan();              
+              //scrolling text heirarchy.
+              if((!(shut.state()>1)) && !((parse.state()>1))){//If neither one stage button is scrolling...
+                if(!info.started()){
+                  info.start();
+                }
+                info.handle(); //Handle our own scrolling text.
+              }
+              else{//reset our own scroller.
+                if(info.started()){
+                  info.stop();
+                }
+              }    
+              
+    }   
+  }
+  
+  //Draw button.
+  public void drawBImage(float h, float s, float b){
+    fill(h, s, b);
+    rect(locx, locy, sizex, sizey);
+    image(button, locx, locy);
+  }
+  
+  public void drawSliderPan(){
+    fill(0, 0, 0, 20);
+    if(sliders.slides.size() == 0){//if we default to the no options text.
+      rect(locX+sizebX, sliders.locY+sizebX, 120,-((sliders.slides.size()*45)+20), 5);
+    }
+    else{
+      rect(locX+sizebX, sliders.locY+sizebX, 120,-(sliders.slides.size()*45), 5);
+    }
+    
+    sliders.handle();
+    if(sliders.slides.size() == 0){
+      fill(0);
+      text("(no options)", sliders.locX+16, sliders.locY+17);
+      fill(255);
+      text("(no options)", sliders.locX+15, sliders.locY+16);
+    }
+    parse.handle(2);
+    shut.handle(2);
+    //Here is where mouse interaction with the dialog is performed.
+    if(shut.state() == 3){
+      dialog = false;
+    }
+    else if(parse.state() == 3){
+      ready = true;
+      dialog = false;
+    }
+  }
+}
