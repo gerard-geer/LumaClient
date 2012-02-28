@@ -1,0 +1,52 @@
+class SliderArray{
+  //Encapsulates an array list of sliders.
+  
+  //ArrayList of sliders.
+  ArrayList slides;
+  
+  //Location.
+  float locX;
+  float locY;
+  
+  //Distance between sliders.
+  float gapX;
+  float gapY;
+  
+  public SliderArray(float locX, float locY, float gapX, float gapY){
+    //Initialize the slider arrayList.
+    slides = new ArrayList();
+    
+    //Load in all the things.
+    this.locX = locX;
+    this.locY = locY;
+    this.gapX = gapX;
+    this.gapY = gapY;
+  }
+  
+  //Adds a slider using the gaps set during construction.
+  public void addSlider(float sThick, float sLength, float startVal, float minVal, float maxVal, float railHue, PFont toUse, String label){
+    Slider temp = new Slider(locX + (gapX*slides.size()), locY + (gapY*slides.size()), sThick, sLength, minVal, maxVal, railHue, toUse, label);
+    temp.setValue(startVal);
+    slides.add(temp);
+  }
+  
+  //Gets the value of a slider at the given index.
+  //If the index is out of range, it returns -1.
+  public float getValue(int index){
+    if(index >= slides.size() || index < 0){
+      return -1;
+    }
+    else{
+      Slider temp = (Slider)slides.get(index);
+      return temp.val;
+    }
+  }
+  
+  //Draws each of the sliders.
+  public void handle(){    
+    for(int i = 0; i < slides.size(); i++){
+      Slider temp = (Slider)slides.get(i);
+      temp.handle();
+    }
+  }
+}
