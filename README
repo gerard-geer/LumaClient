@@ -1,0 +1,26 @@
+These are all independent .pde files intended to be "compiled" as a 
+Processing sketch (program) named "Luma".
+
+How to compile:
+1:  Download and familiarize yourself with Processing. --> http:\\www.processing.org
+
+2:  Once you are comfortable (shouldn't take long) create a new sketch 
+    called "LUMA" and save it.
+
+3:  Close Processing.
+
+4:  Go to the folder that was created in saving the sketch, and dump all the 
+    files in this repository(other than the readme)as plain text with the 
+    extension *.pde into that folder. Overwrite the old Luma.pde.
+
+5:  Reopen Processing and reopen the Luma sketch. You should notice that you 
+    have a bazillion tabs now. That's because Processing doesn't really have 
+    line numbers built into its IDE. Furthermore, it doesn't have much of anything.
+
+6:  Go to my server space and download Lumashits.zip. Unzip the enclosed folder named data
+    right next to all those *.pde files.
+
+7:  Press the little play button in the Processing IDE. Luma should run.
+
+*Note: If you REALLY hate the Processing IDE, you can use the "use external editor" option.
+*Note: Since you grew up on better stuff than this, you REALLY should hate it.
