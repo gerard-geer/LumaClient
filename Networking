@@ -1,0 +1,86 @@
+class Networking{
+  //Here is where we build the checksum and parse the signal.
+  //We also store a buffer of shit that goes wrong, and pass it to the 
+  //console in the main program.
+  
+  //Client object. Since Processing is frame-based and hardly event-based,
+  //I use its built in networking shits to deal with between-frame buffering.
+  //This should be passed in from ConnectingScreen.
+  //Client c;
+  
+  //Declare the checksum accumulator here to save memory. This is processing, remember.
+  int checksum;
+  //Also declare the final signal array.
+  char[] signal;
+  //Error buffer.
+  ArrayList errors;
+  
+  //Okay, if we have a problem with the connection to the server it spells large issues
+  //client-side. We can no longer trust the current connection and hence have to require
+  //the user to reselect a region. In order for the main program to sense that, we need
+  //to have a way for it to poll an object of this class. It polls here by getting the state
+  //of this adequately named boolean.
+  boolean connectionError;
+  
+  public Networking(){
+    checksum = 0;
+    signal = new char[9];
+    errors = new ArrayList();
+    connectionError = false;
+  }
+  
+  //This is where the message gets sent out.
+  //You better be passing in an 8 item array.
+  public void parseMessage(char[] message, Client c){
+    if(message.length == 9 && (int)message[0] == 153){
+      
+      
+      //Send it.
+      try{
+        c.write(new String(message));
+      }
+      catch(Exception e){
+        connectionError = true;
+        String badSignal = "[";
+        for(int i = 0; i < signal.length; i++){
+          badSignal+= (int)signal[i] + " ";
+        }
+        badSignal += "]";
+          
+        errors.add("Connection error when parsing. Signal: "+badSignal);
+      }
+    }
+    
+    
+    else if((int)message[0] != 153){
+      errors.add("First continuity byte != 153.");
+    }
+    else if(message.length != 8){
+      errors.add("Improper primary message formation. Length = "+message.length);
+    }
+    else{
+      errors.add("Unspecified error when parsing.");
+    }    
+  }
+  
+  //Returns true if there are any problems.
+  public boolean testConnection(Client c){
+    //If something has happened to the connection between parses...
+    if(!c.active() || connectionError){
+      errors.add("Client has encountered connectivity errors and must return to");
+      errors.add("region selection.");
+      return true;
+    }
+    return false;
+  }
+  
+  //Returns and clears error log.
+  public ArrayList dumpErrorBuffer(){
+    ArrayList toReturn = errors;
+    errors = new ArrayList();
+    return toReturn;    
+  }
+}
+   
+  
+  
