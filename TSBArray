@@ -1,0 +1,178 @@
+//This class encapsulates an array of two stage buttons.
+class TSBArray{
+  
+  //The index that is currently at the second state.
+  //If no button is at its second state, this value is -1.
+  int currentSS;
+  
+  //Array list of the actual buttons.
+  ArrayList buttons;
+  
+  //Screen location.
+  float locx;
+  float locy;
+  
+  //Value assigned to the Array. This eventually becomes the
+  //Channel byte.
+  int arrayValue;
+  
+  //We draw the buttons on screen in a tightly packed grid.
+  //This defines the constraints of the grid.
+  int maxx;
+  int maxy;
+
+  //Image of the close dialog button.
+  PImage closeImg;
+  //Image of the parse image dialog.
+  PImage parseImg;
+  //Font used for the scrolling text.
+  PFont scrollFont;
+  //The speed of the scrolling.
+  float scrollSpeed;
+  //The font size of the scrolling.
+  float scrollSize;
+  //The font of the parameter sliders.
+  PFont paramFont;
+  //The hue of every button in the array.
+  int h;
+  
+  //Unpopulated array of values received from the two stage button. Declared it up here to avoid having an array made every 1/60s.
+  int[] valsToReturn;
+  //Unpopulated array of values that comprise the channel, pattern, parameter 1-4 bytes.
+  int[] actualVals;
+  
+  //boolean representing whether we have values.
+  
+  
+  //This is also used to flag if there are values to return.
+  boolean valsPres;
+  
+  public TSBArray(float locx, float locy, int maxx, int maxy, int arrayValue, PImage closeImg, PImage parseImg, PFont scrollFont, float scrollSpeed, float scrollSize, PFont paramFont, int h){
+    //Load in the things.
+    this.locx = locx;
+    this.locy = locy;
+    this.maxx = maxx;
+    this.maxy = maxy;
+    this.arrayValue = arrayValue;
+    //We want these to be consistent across all the buttons in the array, so we predefine them during construction.
+    this.closeImg = closeImg;
+    this.parseImg = parseImg;
+    this.scrollFont = scrollFont;
+    this.scrollSpeed = scrollSpeed;
+    this.scrollSize = scrollSize;
+    this.paramFont = paramFont;
+    this.h = h;
+    
+    
+    //Initialize the array list.
+    buttons = new ArrayList();
+    
+    //Initialize the current second stage identifier.
+    currentSS = -1;
+    
+    //Initialize valsToReturn.
+    valsToReturn = new int[6];
+    
+    valsPres = false;
+  }
+  
+  public void addButton(String[] parameters, int value, String desc, PImage img){
+    //If we haven't exceeded the bounds of our array,
+    if(buttons.size()<=(maxx*maxy)){
+      //Make a new button,
+      TwoStageButton button = new TwoStageButton(locx + (20*(buttons.size()%maxx)), locy+((int)(20*(buttons.size()/maxx))), value, img, closeImg, parseImg, desc, scrollFont, scrollSpeed, scrollSize, h);
+      //Give it the parameters,(no more than four)
+      for(int i = 0; i < parameters.length; i++){
+        if(i<=3){
+          button.addParam(parameters[i], paramFont);
+        }
+      }
+      //Then add it to the array.
+      buttons.add(button);
+    }
+    //Else, print an error out to the console.
+    else{
+      println("TSBArray button overflow.");
+    }
+  }
+  
+  public void handle(int numButtons, int mode){
+    currentSS = -1;
+    valsPres = false;
+    
+    //Normalize numButtons.
+    if(numButtons >= buttons.size()){ numButtons = buttons.size(); }
+    
+    for(int i = 0; i < numButtons; i++){
+      TwoStageButton temp = (TwoStageButton)buttons.get(i);
+      if(temp.state() == 2){
+       currentSS = i;
+      }
+    }
+    
+    if(mode == 1){
+      //Handle buttons.
+      for(int i = 0; i < numButtons; i++){
+        TwoStageButton temp = (TwoStageButton)buttons.get(i);
+        //If currentSS is not allocated
+        if(currentSS == -1){
+          temp.handle(1);
+        }
+        else{
+          if(i == currentSS){
+            //Do nothing. Handle this button last, so it's on top of the others.
+          }
+          else{
+            temp.handle(0);
+          }
+        }
+        //If any of them have been marked for parsing, return their values for, well, parsing.
+        //Also, further avoid button conflicts.
+        if(temp.ready() && !valsPres){
+          valsPres = true;
+          valsToReturn = temp.getValues();
+        }
+      }
+      //Handle the active button.
+      if(currentSS != -1){
+        TwoStageButton temp = (TwoStageButton)buttons.get(currentSS);
+        temp.handle(1);
+      }        
+    }
+    else{
+      currentSS = -1;
+      for(int i = 0; i < numButtons; i++){
+         TwoStageButton temp = (TwoStageButton)buttons.get(i);
+        temp.handle(0);  
+      }
+    }
+  }
+  
+  //Returns whether the array has values to return.
+  public boolean hasValues(){
+    return valsPres;
+  }
+  
+  //Returns the values, and resets valsPres.
+  public int[] getValues(){
+    //Return something. If no values have been officially set this frame, fill it with null flags.
+    if(valsPres){//          channel     pattern          param 1          param 2          param 3          param 4
+      actualVals = new int[]{arrayValue, valsToReturn[0], valsToReturn[1], valsToReturn[2], valsToReturn[3], valsToReturn[4]};
+      valsPres = false;
+      return actualVals;
+    }
+    else{
+      for(int i = 0; i < actualVals.length; i++){
+        actualVals[i] = -1;
+      }   
+      return actualVals;
+    }
+  }
+}
+  
+  
+    
+     
+    
+  
+  
