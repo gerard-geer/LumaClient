@@ -1,0 +1,460 @@
+class MainScreen{
+  //This is where the gui is handled.
+  
+  //The current state of the screen.
+  int state;
+  //STATE KEY:
+  //0: red buttons
+  //1: green buttons
+  //2: blue buttons
+  //3: preset buttons
+  //4: interaction
+  //5: red buttons
+  //6: green buttons
+  //7: blue buttons
+  //8: preset buttons
+  //9: waiting state
+  
+  //The currently being placed button. In the intro states, we
+  //add each button to the screen once at a time. In the outro
+  //state we remove them one at a time.
+  int currentbuttonr;
+  int currentbuttong;
+  int currentbuttonb;
+  int currentbuttonp;
+  
+  //Images used for the labels.
+  PImage rlabel;
+  PImage glabel;
+  PImage blabel;
+  PImage plabel;
+  
+  //Used in the fade in.
+  float currentAlpha;
+  float alphaChange;
+  
+  //Booleans representing different things about the screen.
+  //Done represents of the end of the screen has been reached.
+  //In this case it means that the back button has been pressed
+  //and the exit animations have finished.
+  boolean done;
+  //Has values represents whether a button has been parse-clicked
+  //and has returned some values. It essentially means that we have
+  //some values to parse to the server, and for the main program to
+  //do it.
+  boolean hasVals;
+  
+  //This is the array that contains the values returned by the 
+  //buttons.
+  int[] frombuttons;
+  //This holds the completed message.
+  char[] completeMessage;
+  
+  //This holds the Place object of the bank that we are connected to.
+  Place currentPlace;
+  
+  //Text scroller at the top that shows the current connection.
+  TextScroller placeInfo;
+  
+  /*===================================================================================*\
+  | FILES  FILES  FILES  FILES  FILES  FILES  FILES  FILES  FILES  FILES  FILES  FILES  |
+  \*===================================================================================*/
+
+  //Array of buttons for the red channel.
+  TSBArray r;
+  //Array of filenames for the button images.
+  String[] rfilenames;
+  //Array of the actual images.
+  PImage[] rbimages;
+  //Array of button descriptions.
+  String[] rdescs;
+  
+  //Array of buttons for the green channel.
+  TSBArray g;
+  //Array of filenames for the button images.
+  String[] gfilenames;
+  //Array of teh actual images.
+  PImage[] gbimages;
+  //Array of button descriptions.
+  String[] gdescs;
+  
+  //Array of buttons for the blue channel.
+  TSBArray b;
+  //Array of filenames for the button images.
+  String[] bfilenames;
+  //Array of the actual images.
+  PImage[] bbimages;
+  //Array of button descriptions.
+  String[] bdescs;
+  
+  //Array of buttons for the preset channel.
+  TSBArray p;
+  //Array of filenames for the button images.
+  String[] pfilenames;
+  //Array of the actual images.
+  PImage[] pbimages;
+  //Array of button descriptions.
+  String[] pdescs;
+  
+  
+ /*These are used with every button.*/
+  //PImage of the popup background.
+  PImage popup;
+  //PImage of the close button.
+  PImage cls;
+  //PImage of the parse button.
+  PImage parse;
+  //Font used for the scroling text.
+  PFont scrollFont;
+  //Font used for the parameters.
+  PFont paramFont;
+  
+ /*These are used for extra buttons.*/
+  PImage back;
+  String backdesc;
+  OneStageButton backButton;
+  
+  public MainScreen(PFont paramFont, Place currentPlace){
+    //Initialize state.
+    state = 0;
+    //Initialize currentButtons
+    currentbuttonr = 0;
+    currentbuttong = 0;
+    currentbuttonb = 0;
+    currentbuttonp = 0;
+        
+    //initialize the booleans
+    done = false;
+    hasVals = false;
+    
+    //Initialize frombuttons.
+    frombuttons = new int[6];
+    for(int i = 0; i < frombuttons.length; i++){
+      frombuttons[i] = -1;
+    }
+    
+    //Initialize the message array.
+    completeMessage = new char[9];
+    for(int i = 0; i < completeMessage.length; i++){
+      completeMessage[i] = (char) 0;
+    }
+    //initialize the connected place.
+    this.currentPlace = currentPlace;
+    
+    //Load the filenames.
+    rfilenames = loadStrings("patterns.ldf");
+    gfilenames = loadStrings("patterns.ldf");
+    bfilenames = loadStrings("patterns.ldf");
+    pfilenames = loadStrings("presets.ldf");
+    
+    //Load the labels.
+    rlabel = loadImage("rlabel.png");
+    glabel = loadImage("glabel.png");
+    blabel = loadImage("blabel.png");
+    plabel = loadImage("plabel.png");
+  
+    
+    //Load the images.
+    rbimages = new PImage[rfilenames.length];
+    for(int i = 0; i < rfilenames.length; i++){
+      rbimages[i] = loadImage(rfilenames[i]);
+    }
+    gbimages = new PImage[gfilenames.length];
+    for(int i = 0; i < gfilenames.length; i++){
+      gbimages[i] = loadImage(gfilenames[i]);
+    }
+    bbimages = new PImage[bfilenames.length];
+    for(int i = 0; i < bfilenames.length; i++){
+      bbimages[i] = loadImage(bfilenames[i]);
+    }
+    pbimages = new PImage[pfilenames.length];
+    for(int i = 0; i < pfilenames.length; i++){
+      pbimages[i] = loadImage(pfilenames[i]);
+    }
+    
+    //Load the button descriptions.
+    rdescs = loadStrings("descriptions.ldf");
+    gdescs = loadStrings("descriptions.ldf");
+    bdescs = loadStrings("descriptions.ldf");
+    pdescs = loadStrings("presDescs.ldf");
+    
+    //Load other data.
+    cls = loadImage("closeButton.png");
+    parse = loadImage("parseButton.png");
+    scrollFont = loadFont("scrolling.vlw");
+    back =loadImage("backButton.png");
+    backdesc = "Terminate the connection to this bank and return to the Region Selection Screen to select a different bank.";
+    //The scrolling font has different visibility requirements(since it is moving
+    //sideways we need large spaces inside the letters to account for 
+    //ghosting)than the parameter font. And since we actually want a cohesive
+    //style, we are using the main font of LUMA, which is passed in.
+    this.paramFont = paramFont;
+    
+    //Create the TSBAs.
+    r = new TSBArray(20, 160, 2, 6, 0, cls, parse, scrollFont, 1.5, 12, paramFont, 0);
+    g = new TSBArray(180, 160, 2, 6, 1, cls, parse, scrollFont, 1.5, 12, paramFont, 80);
+    b = new TSBArray(340, 160, 2, 6, 2, cls, parse, scrollFont, 1.5, 12, paramFont, 149);
+    p = new TSBArray(500, 160, 2, 6, 3, cls, parse, scrollFont, 1.5, 12, paramFont, 42);
+    
+    //Initialize the placeInfo scroller.
+    String placeInfoMessage = "Currently connected to the " + currentPlace.getBankName() 
+                              + " bank on the " + currentPlace.getName() + " server @"
+                              +currentPlace.getAddress();
+    placeInfo = new TextScroller(0, 20, placeInfoMessage.toCharArray().length*(6), 1.5, placeInfoMessage, scrollFont, 12);
+    
+    //Initialize fade-in values.
+    currentAlpha = 255;
+    //initialize the alpha change.
+    alphaChange = 5;
+    
+    //Populate the red TSBA with buttons.
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 0, rdescs[0], rbimages[0]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 1, rdescs[1], rbimages[1]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 2, rdescs[2], rbimages[2]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 3, rdescs[3], rbimages[3]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 4, rdescs[4], rbimages[4]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 5, rdescs[5], rbimages[5]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 6, rdescs[6], rbimages[6]);
+    r.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Min. Length", "Max. Length"}, 7, rdescs[7], rbimages[7]);
+    r.addButton(new String[]{"Brightness"}, 8, rdescs[8], rbimages[8]);
+    r.addButton(new String[]{"Max. Brightness", "Speed"}, 9, rdescs[9], rbimages[9]);
+    r.addButton(new String[]{"Max. Brightness", "Speed"}, 10, rdescs[10], rbimages[10]);
+    
+    //Populate the green TSBA with buttons.
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 0, gdescs[0], gbimages[0]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 1, gdescs[1], gbimages[1]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "SpeIntervaled"}, 2, gdescs[2], gbimages[2]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 3, gdescs[3], gbimages[3]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 4, gdescs[4], gbimages[4]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 5, gdescs[5], gbimages[5]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 6, gdescs[6], gbimages[6]);
+    g.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Min. Length", "Max. Length"}, 7, gdescs[7], gbimages[7]);
+    g.addButton(new String[]{"Brightness"}, 8, gdescs[8], gbimages[8]);
+    g.addButton(new String[]{"Max. Brightness", "Speed"}, 9, gdescs[9], gbimages[9]);
+    g.addButton(new String[]{"Max. Brightness", "Speed"}, 10, gdescs[10], gbimages[10]);
+    
+    //Populate the blue TSBA with buttons.
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 0, bdescs[0], bbimages[0]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Interval"}, 1, bdescs[1], bbimages[1]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "SpeIntervaled"}, 2, bdescs[2], bbimages[2]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 3, bdescs[3], bbimages[3]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 4, bdescs[4], bbimages[4]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 5, bdescs[5], bbimages[5]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Speed"}, 6, bdescs[6], bbimages[6]);
+    b.addButton(new String[]{"Max. Brightness", "Min. Brightness", "Min. Length", "Max. Length"}, 7, bdescs[7], bbimages[7]);
+    b.addButton(new String[]{"Brightness"}, 8, bdescs[8], bbimages[8]);
+    b.addButton(new String[]{"Max. Brightness", "Speed"}, 9, bdescs[9], bbimages[9]);
+    b.addButton(new String[]{"Max. Brightness", "Speed"}, 10, bdescs[10], bbimages[10]);
+    
+    //Populate the presets TSBA with buttons.
+    p.addButton(new String[]{}, 0, pdescs[0], pbimages[0]);
+    p.addButton(new String[]{}, 1, pdescs[1], pbimages[1]);
+    p.addButton(new String[]{}, 2, pdescs[2], pbimages[2]);
+    p.addButton(new String[]{}, 3, pdescs[3], pbimages[3]);
+    p.addButton(new String[]{}, 4, pdescs[4], pbimages[4]);
+    p.addButton(new String[]{}, 5, pdescs[5], pbimages[5]);
+    p.addButton(new String[]{}, 6, pdescs[6], pbimages[6]);
+    p.addButton(new String[]{}, 7, pdescs[7], pbimages[7]);
+    p.addButton(new String[]{}, 8, pdescs[8], pbimages[8]);
+    p.addButton(new String[]{}, 9, pdescs[9], pbimages[9]);
+
+    
+    //create the back button.
+    backButton = new OneStageButton(width-back.width, 0, height - 10, back, backdesc, scrollFont, 12, 120);
+  }
+   
+  public void handle(){
+    switch(state){ 
+  /*DRAWING  DRAWING  DRAWING  DRAWING  DRAWING  DRAWING  DRAWING  DRAWING  DRAWING   DRAWING*/
+      //Bring in the red buttons.
+      case 0: background(255);
+              handleButtons();
+              currentbuttonr++;
+              if(currentbuttonr >= r.buttons.size()){
+                state = 1;
+              }
+              break;
+              
+      //Bring in the green buttons.
+      case 1: background(255);
+              handleButtons();
+              currentbuttong++;
+              if(currentbuttong >= g.buttons.size()){
+                state = 2;
+              }
+              break;
+      
+      //Bring in the blue buttons.        
+      case 2: background(255);
+              handleButtons();
+              currentbuttonb++;
+              if(currentbuttonb >= b.buttons.size()){
+                state = 3;
+              }
+              break;
+              
+      //Bring in the preset buttons.
+      case 3: background(255);
+              handleButtons();
+              currentbuttonp++;
+              if(currentbuttonp >= p.buttons.size()){
+                state = 4;
+              }
+              break;
+      
+      //Full user interaction.
+      case 4: ghettoBlur(40);
+              handleButtons();
+              if(backButton.state() == 3){
+                state = 5;
+              }
+              break;
+      
+      //Remove the red buttons.
+      case 5: ghettoBlur(40);
+              handleButtons();
+              currentbuttonr--;
+              if(currentbuttonr == 0){
+                state = 6;
+              }
+              break;
+              
+      //Remove the green buttons.
+      case 6: ghettoBlur(40);
+              handleButtons();
+              currentbuttong--;
+              if(currentbuttong == 0){
+                state = 7;
+              }
+              break;
+      
+      //Remove the blue buttons.        
+      case 7: ghettoBlur(40);
+              handleButtons();
+              currentbuttonb--;
+              if(currentbuttonb == 0){
+                state = 8;
+              }
+              break;
+              
+      //Remove the preset buttons.
+      case 8: ghettoBlur(40);
+              handleButtons();
+              currentbuttonp--;
+              if(currentbuttonp == 0){
+                state = 9;
+                done = true;
+              }
+              break;
+              
+      //Waiting state.        
+      case 9: background(255);
+              break;
+              
+    }
+    //Handle place info. If we mouse over it, it restarts.
+    if(mouseX > 0 && mouseX < backButton.locx){
+      if(mouseY < placeInfo.locy){
+        placeInfo.resetScroll();
+      }
+    }
+    if(!placeInfo.started()){
+      placeInfo.start();
+    }
+    placeInfo.handle();
+    
+    //Handle the back button.
+    backButton.handle(2);
+    
+    //Draw the labels.
+    image(rlabel, (float)r.locx+(2*sin(frameCount*.01)), r.locy-20);
+    image(glabel, g.locx, g.locy-20);
+    image(blabel, b.locx, b.locy-20);
+    image(plabel, p.locx, p.locy-20);
+    
+    //If we are in an intro state, fade in.
+    if(state < 4){
+      fill(255, 0, 255, currentAlpha);
+      rect(0, 0, width, height);
+      currentAlpha-=alphaChange;
+    }
+      
+      
+  /*INTERACTION  INTERACTION  INTERACTION  INTERACTION  INTERACTION  INTERACTION*/
+    if(r.hasValues()){
+      frombuttons = r.getValues();
+      hasVals = true;
+    }
+    if(g.hasValues()){
+      frombuttons = g.getValues();
+      hasVals = true;
+    }
+    if(b.hasValues()){
+      frombuttons = b.getValues();
+      hasVals = true;
+    }
+    if(p.hasValues()){
+      frombuttons = p.getValues();
+      hasVals = true;
+    }
+  }
+  
+  //Returns whether we have a completed message or not.
+  boolean hasCompleteMessage(){
+    return hasVals;
+  }
+  
+  //Returns whether or not the screen is done.
+  boolean isDone(){
+    return done;
+  }
+  
+  //Returns the values(THE COMPLETE MESSAGE!){
+  public char[] getMessage(){
+    hasVals = false;
+    completeMessage[0] = (char)153;
+    completeMessage[1] = (char)currentPlace.getBank();
+    completeMessage[2] = (char)frombuttons[0];
+    completeMessage[3] = (char)frombuttons[1];
+    completeMessage[4] = (char)frombuttons[2];
+    completeMessage[5] = (char)frombuttons[3];
+    completeMessage[6] = (char)frombuttons[4];
+    completeMessage[7] = (char)frombuttons[5];
+    int checksum = 0;
+    for(int i = 0; i < 8; i++){
+      checksum += completeMessage[i];
+    }
+    checksum/=8;
+    completeMessage[8] = (char)checksum;
+    
+    return completeMessage;
+  }
+    
+  //Handle buttons.
+  public void handleButtons(){
+     if(g.currentSS == -1 && b.currentSS == -1 && p.currentSS == -1)
+      r.handle(currentbuttonr, 1);
+     else
+       r.handle(currentbuttonr, 0);
+     if(r.currentSS == -1 && b.currentSS == -1 && p.currentSS == -1)
+       g.handle(currentbuttong, 1);
+     else
+       g.handle(currentbuttong, 0);
+     if(r.currentSS == -1 && g.currentSS == -1 && p.currentSS == -1)
+       b.handle(currentbuttonb, 1);
+     else
+       b.handle(currentbuttonb, 0);
+     if(r.currentSS == -1 && g.currentSS == -1 && b.currentSS == -1)
+       p.handle(currentbuttonp, 1);
+     else
+       p.handle(currentbuttonp, 0);
+  }
+  
+  //GhettoBlur.
+  public void ghettoBlur(float diff){
+    fill(255, 255, 255, diff);
+    rect(0, 0, width, height);
+  }    
+}
+  
+  
