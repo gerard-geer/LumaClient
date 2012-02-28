@@ -1,0 +1,32 @@
+class Place{
+  /*This encapsulates the routing info of which set of lights to light.*/
+  
+  String address;   //Address, e.g., gmp.student.rit.edu
+  String name;      //e.g., "Elevator
+  byte bank;        //which pwm bank to use on the arduino, 0, or 1.
+  String bankName;  //More tangible reference for the bank.
+  
+  public Place(String address, String name, byte bank, String bankName){
+    this.address = address;
+    this.name = name;
+    this.bank = bank;
+    this.bankName = bankName;
+  }
+  
+  public String getAddress(){
+    return address;
+  }
+  
+  public String getName(){
+    return name;
+  }
+  
+  public byte getBank(){
+    return bank;
+  }
+  
+  public String getBankName(){
+    return bankName;
+  }
+}
+
