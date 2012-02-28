@@ -1,0 +1,110 @@
+class Kittens{
+  //Lulz
+  
+  //Arraylist representing the kitten pix.
+  ArrayList pix;
+  
+  //String array representing the file names loaded in from file.
+  String fnames[];
+  
+  //This will always be running minimistically, but if we set
+  //this state to !0 it will choose a picture and display it for a brief
+  //moment.
+  int state;
+  
+  //Index of chosen image;
+  int chosen;
+  //PImage of chosen image.
+  PImage chosenImg;
+  
+  //Frame display began.
+  int frameStart;
+  //Num frames spent.
+  int time;
+  
+  //started?
+  boolean started;
+  //finished?
+  boolean done;
+  
+  public Kittens(int timeToDisplay){
+    //Attempt to load the file
+    try{
+      fnames = loadStrings("kittenpix.awbt");
+      println("loaded file names.");
+    }
+    catch(Exception e){
+      fnames = new String[0];
+    }
+    
+    //Initialize the pix alist.
+    pix = new ArrayList();
+    
+    //Try to load the images.
+    for(int i = 0; i < fnames.length; i++){
+      try{
+        PImage x = requestImage(fnames[i]);
+        println("loaded image named "+fnames[i]);
+        pix.add(x);
+        println("added image named "+fnames[i]);
+        
+      }
+      catch(Exception e){
+        //NO KITTEHS FOR YOU
+      }
+    }
+    
+    //Initialize state to zero.
+    state = 0;
+    
+    started = false;
+    done = false;
+    
+    //load in the time.
+    time = timeToDisplay;
+  }
+  
+  //Handle this lulz.
+  public void handle(){
+    switch(state){
+      case 0: //Do nothing
+              break;
+      
+      case 1: //select an image
+              chosen = (int) random(0, pix.size());
+              chosenImg = (PImage)pix.get(chosen);
+              state = 2;
+              frameStart = frameCount;
+              break;
+      
+      case 2: //display the image for the amount of time needed.
+              if(frameCount < frameStart + time){
+                set(0, 0, chosenImg);
+              }
+              else{
+                state = 0;
+              }
+              break;
+    }
+  }
+  
+  public void start(){
+    state = 1;
+    started = true;
+  }
+  
+  public boolean started(){
+    return started;
+  }
+  
+  public boolean done(){
+    if(started && state == 0){
+      started = false;
+      return true;
+    }
+    else{
+      return false;
+    }
+  } 
+}
+              
