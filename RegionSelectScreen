@@ -1,0 +1,244 @@
+//At this screen the user selects with a pointing device which server, and which bank
+//they want to control. 
+class RegionSelectScreen{
+  
+  //The state of the screen.
+  //key:
+  //0: loading lines
+  //1: resetting certain values
+  //2: loading names
+  //3: interactive
+  //4: resetting certain values
+  //4: unloading names
+  //5: unloading selected name.
+  //6: resetting certain values.
+  byte state;
+  
+  //Array of places to base the buttons off of.
+  Place[] places;
+  
+  //Components of the buttons.
+  PVector[] start, current, finish;
+  ArrayList lineLocations;
+  ArrayList rectLocations;
+  byte bannerWidth;
+  byte bannerHeight;
+  boolean done;
+  
+  //Incrementation value used in animation.
+  float incr;
+  
+  //Which button is currently being loaded.
+  byte currentButton;
+  
+  //Button that was selected.
+  byte selectedButton;
+  
+  //The Place that was selected.
+  Place selectedPlace;
+  
+  //Font of the button's text.
+  PFont buttonFont;
+  
+  //Color of the font.
+  color fontColor;
+  
+  //Color of the elements.
+  color elementColor;
+  
+  //Fade stuff.
+  float currentAlpha;
+  float alphaChange;
+  
+  public RegionSelectScreen(Place[] places, PFont buttonFont){
+    //Initialize the screen to start at the first state.
+    state = 0;
+    
+    //Load in the specified values.
+    this.places = places;
+    this.buttonFont = buttonFont;
+    
+    //Set the color mode.
+    colorMode(RGB);
+    
+    //White.
+    fontColor = color(255, 255, 255);
+    
+    //Black.
+    elementColor = color(0, 0, 0);
+    
+    //Set up fade things.
+    currentAlpha = 255;
+    alphaChange = 5;
+    
+    //We aren't ready to leave this screen yet, are we?
+    done = false;
+    
+    //Set up element structures.
+    start = new PVector[places.length];
+    current = new PVector[places.length];
+    finish = new PVector[places.length];
+    lineLocations = new ArrayList();
+    rectLocations = new ArrayList();
+    
+    //How far the lines move each frame.
+    incr = (width/3)/8;
+    
+    //Rectangle sizes.
+    bannerHeight = byte(height/(12));
+    bannerWidth = (byte)(width/5);
+    
+    //Initialize the strings.
+    for(int i = 0; i < places.length; i++){
+//      start[i] = new PVector(0, (height/ (places.length+1))*(i+1));
+      start[i] = new PVector(0, height);
+
+      current[i] = new PVector(0, (height/ (places.length+1))*(i+1));
+      finish[i] = new PVector((width/2)+(bannerWidth/2), (height/ (places.length+1))*(i+1));
+    }
+        
+  }
+  
+  public void handle(){
+    fill(255, 255, 255, 80);
+    rect(0, 0, width, height);
+    textFont(buttonFont);
+    textSize(16);
+    strokeWeight(height/(48));
+    switch(state){
+      //Animate lines being drawn in.
+      case 0: drawCompletedLines();
+              //Draw currently being drawn line.
+              line(start[currentButton].x, start[currentButton].y, current[currentButton].x, current[currentButton].y);
+              current[currentButton].x+=incr;
+              
+              //When we finish a line, add it to a structure to draw it in its completed form as well as the current line.
+              if(current[currentButton].x >= finish[currentButton].x){
+                lineLocations.add(new PVector(finish[currentButton].x, finish[currentButton].y));
+                currentButton++;
+              }
+              if(currentButton >= places.length){
+                state = 1;
+              }
+              break;
+              
+      //Reset currentButton, but draw everything, since this takes a whole frame to do.
+      case 1: drawCompletedLines();
+              currentButton = 0;
+              state = 2;
+              break;
+              
+      //Draw banners and text.
+      case 2: //Draw every completed line.
+              drawCompletedLines();
+              //Draw every completed rectangle.
+              drawCompletedRectangles();
+              //Add to a list of previously drawn rectangles and move to the next button every third frame.
+              if(frameCount%3 == 0){
+                rectLocations.add(new PVector((width/2)+(bannerWidth/2), finish[currentButton].y-(bannerHeight/2)));
+                currentButton++; 
+              }
+              
+              if(currentButton >= places.length){
+                state = 3;
+              }
+              break;
+              
+      //Interactive state.
+      case 3: //Draw Lines.
+              drawCompletedLines();
+              //Draw every completed rectangle.
+              drawCompletedRectangles();
+              //Mouse interaction
+              for(int i = 0; i < rectLocations.size(); i++){
+                PVector temp = (PVector)rectLocations.get(i);
+                if(mousePressed){
+                
+                
+                  //for each button if the mouse is pressed, and is within the banner of each button,
+                  if(mouseX > temp.x){
+                    
+                    if(mouseX < temp.x-bannerWidth){
+                     
+                      if(mouseY > temp.y && mouseY < temp.y+bannerHeight){
+                        
+                        selectedButton = (byte)i;
+                        selectedPlace = places[i];
+                        state = 4;
+                      }
+                    }
+                  }
+                }
+              }
+              break;
+      case 4: //Remove one banner at a time, excluding the selected one.
+              stroke(elementColor);
+              //Draw every completed line.
+              drawCompletedLines();
+              //Draw every completed rectangle.
+              drawCompletedRectangles();
+              //Every third frame remove one from the list.
+              if(frameCount%3 == 0){
+                rectLocations.remove(0);
+                currentButton--;
+              }
+              if(rectLocations.size() == 0){
+                state = 5;
+                currentButton = (byte)(places.length-1);
+              }
+              break;
+      case 5: //Return all the lines.
+              stroke(elementColor);
+              
+              //Draw all remaining full completed lines.
+              drawCompletedLines();
+              //Draw currently being retracted line.      
+              line(start[currentButton].x, start[currentButton].y, current[currentButton].x, current[currentButton].y);
+              current[currentButton].x-=incr;
+              
+              //When we finish a line, remove it from the structure of completed lines.
+              if(current[currentButton].x <= start[currentButton].x){
+                lineLocations.remove(0);
+                currentButton--;
+              }
+              if(currentButton < 0){
+                done = true;
+                //go to a seventh state to wait for the main program to leave this screen.
+                state = 6;
+              }
+              break;
+      case 6: //Waiting state
+              done = true;
+              break;
+      }
+  }
+  
+  public void drawCompletedLines(){
+    stroke(elementColor);
+    //For all the completed lines.
+    for(int i = 0; i < lineLocations.size(); i++){
+      line(current[i].x, current[i].y, start[i].x, start[i].y);
+    }
+  }
+  
+  public void drawCompletedRectangles(){
+    //Draw each rectangle.
+    for(int i = 0; i < rectLocations.size(); i++){
+      PVector temp = (PVector)rectLocations.get(i);
+      fill(elementColor);
+      rect(temp.x, temp.y, -bannerWidth, bannerHeight, 4);
+      fill(fontColor);
+      text(places[i].getBankName() + " @\n" + places[i].getName(), temp.x+5, temp.y+14);
+    }
+  }  
+  
+  //Returns if the menu is done or not.
+  public boolean isDone(){
+    return done;
+  }
+  
+  //Returns the place that the user selected.
+  public Place getSelectedPlace(){
+    return selectedPlace;
+  }
+}
