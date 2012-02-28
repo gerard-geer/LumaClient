@@ -1,0 +1,698 @@
+//This class draws a fps style console window that mirrors all actions done unto the server.
+class ConsoleWindow{
+  
+  //The client to listen for activity on. Usually a reference to 
+  //the same client that we send shit with.
+  Client listener;
+  
+  //Buffer of statements.
+  ArrayList statements;
+
+  //Maximum chars to display of each statement.
+  int maxChars;
+  
+  //Font used for the statements.
+  PFont consoleFont;
+  
+  //String that holds the most recent input.
+  String input;
+  
+  //Index of previous input that one has cycled up to.
+  int indexPrev;
+  
+  //String that represents the most recent input once it is finalized as a console command.
+  String command;
+  
+  //The height of the overlaying box.
+  float windowHeight;
+  
+  //Boolean of whether or not the input has been finalized.
+  boolean finalized;
+  
+  //State of genCommand.
+  int gcState;
+  
+  //Values used in genCommand.
+  byte contA;
+  byte bank;
+  byte chan;
+  byte pat;
+  byte param1;
+  byte param2;
+  byte param3;
+  byte param4;
+  byte checksum;
+  boolean kitten;
+
+  public ConsoleWindow(PFont consoleFont, int maxChars, float windowHeight){
+    //Load in the things.
+    this.consoleFont  = consoleFont;
+    this.maxChars     = maxChars;
+    this.windowHeight = windowHeight;
+    //listener = client;
+    
+    //Initialize statements.
+    statements = new ArrayList();
+    input = "";
+    command = "";
+    
+    //Initialize finality.
+    finalized = false;
+    
+    //Initialize gc state.
+    gcState = 0;
+    
+    //Initialize kitten.
+    kitten = false;
+    
+    
+  }
+  
+  //THIS MUST BE CALLED IN ORDER TO LISTEN. Duh.
+  public void setListener(Client c){
+    listener = c;
+  }
+  
+  //Add a statement to the buffer.
+  public void addToBuffer(String newMessage){
+    statements.add("  "+newMessage);
+  }
+    
+  //Maintain buffer must be called even if you are not drawing the console window.
+  public void maintainBuffer(){
+    //If the incoming stream of the Client has any data..
+    try{
+      if(listener.available() > 0){
+        //Add that data to the statement buffer.
+        statements.add(listener.readString());
+      }
+    }
+    catch(Exception e){
+      //Oh well.
+    }
+  }
+  
+/////////////////////////////////////////////////////////////////////////////////
+//HANDLE INPUT HANDLE INPUT HANDLE INPUT HANDLE INPUT HANDLE INPUT HANDLE INPUT//
+/////////////////////////////////////////////////////////////////////////////////
+  public void input(char inputAddition){
+    //Load in the input.
+    input += inputAddition;
+    
+    //Draw the string in the input box.  
+    fill(255);
+    text(input, 24, windowHeight+12);
+  }
+  public void backspaceInput(){
+    if(input.length()>0)
+      input = input.substring(0, input.length()-1);
+  }
+  public void previousInput(){
+    
+    
+    //find the previous entry.
+    if(indexPrev > 0){
+      String temp = (String)statements.get(indexPrev);
+
+      while(!temp.substring(0, 4).equalsIgnoreCase("  ->") || indexPrev>0){
+        indexPrev --;
+      }
+      if(indexPrev >= 0 && temp.substring(0, 4).equalsIgnoreCase("  ->")){
+        input = temp;
+      }
+    }
+  }    
+      
+  
+  //Also where it is handled. OH MY GOD ALL THE THINGS.
+  public void finalizeInput(){
+    //Mark as finalized.
+    finalized = true;
+    indexPrev = statements.size();
+    //Trim all spaces " " from the command.
+    command = input.replaceAll(" ", "");
+    statements.add("  ->"+input);
+    //To make sure we never have an out-of-bounds String index.
+    command += ";jkjk;jk;jk;jk;k;jkjk;jk;j;kjk;j;kj;kjk;;jj;j;kjk;jk;jk;jk;jk;jk;";
+    input = "";
+    
+    if(command.substring(0, 5).equalsIgnoreCase("clear")){
+      if(command.substring(5, 8).equalsIgnoreCase("updates")){
+        for(int i = 0; i < statements.size(); i++){
+          String temp = (String)statements.get(i);
+          if(temp.charAt(0) != ' '){
+            statements.remove(i);
+          }
+        }
+        statements.add("  **UPDATES CLEARED BY USER**");
+      }
+      else{
+        statements = new ArrayList();
+        statements.add("  ***LOCAL BUFFER CLEARED BY USER***");
+      }
+    }
+    if(command.substring(0, 6).equalsIgnoreCase("kitten") || command.substring(0, 3).equalsIgnoreCase("cat")||
+       command.substring(0, 5).equalsIgnoreCase("kitty") || command.substring(0, 7).equalsIgnoreCase("kitties")){
+      kitten = true;
+      statements.add("  YOU HAVE UNLEASHED...");
+      statements.add("                 ...A kitten. :D");
+    }
+    try{
+      
+      if(command.substring(0, 11).equalsIgnoreCase("genCommandq")){
+        if(gcState > 0){
+          gcState = 0;
+          statements.add("  *COMMAND GENERATION HALTED.*");
+          finalized = false;
+        }
+        else{
+          statements.add("  genCommand not running.");
+          finalized = false;
+        }
+      }            
+      else if(command.substring(0, 10).equalsIgnoreCase("genCommand")){
+        if(gcState > 0){
+          statements.add("  *genCommand already running.");
+          finalized = false;
+        }
+        else{
+          gcState = 1;
+          finalized = false;
+        }
+      }
+      
+      
+      else if(command.substring(0, 6).equalsIgnoreCase("comSyn")){
+        if(command.substring(6, 10).equalsIgnoreCase("help")){
+          statements.add("  -List of commands for use extending comSyn(command syntacies):");
+          statements.add("  \"ContA\" \"153\" : Explains the purpose fo the first byte in the internal");
+          statements.add("                      command syntax.");
+          statements.add("  \"Bank\"          : Explains the considerations of the bank byte.");
+          statements.add("  \"Channel\"       : Details what the channel byte is used as.");
+          statements.add("  \"Pattern\"       : Chronicles the ways of the pattern byte.");
+          statements.add("                      (Further options available.)");
+          statements.add("  \"Param\"         : Details the parameter bytes as a whole. ");
+          statements.add("                      (Further options available.)");
+          statements.add("  \"Checksum\"      : Describes how to derive the checksum.");
+          statements.add("  \"Preset\"        : Describes the various presets.");
+          finalized = false;
+        }
+        if(command.substring(6, 11).equalsIgnoreCase("contA")||
+           command.substring(6, 9).equalsIgnoreCase("153")){
+          statements.add("  -Simply the value 153. This is a constant value so that if it varies,");
+          statements.add("  -we know that a frame shift corruption occured in transmission between");
+          statements.add("  -components of the Luma System.");
+          finalized = false;
+        }
+        if(command.substring(6, 14).equalsIgnoreCase("checksum")){
+          statements.add("  -The checksum is the integer divided average of the first 8 bytes in the");
+          statements.add("  -command string.");
+          finalized = false;
+        }
+        else if(command.substring(6, 10).equalsIgnoreCase("bank")){
+          statements.add("  -The bank value is the index of the intended bank on the server.");
+          statements.add("  -Each board has two banks, so we use bank values exceeding 1 in order");
+          statements.add("  -to determine which \"serial\" port to use on the server.");
+          statements.add("  -Simply a value 0 to [number of banks]");
+          finalized = false;
+        }
+        else if(command.substring(6, 13).equalsIgnoreCase("channel")){
+          statements.add("  -The channel value is the color channel you wish to modulate");
+          statements.add("  -<0 = R> <1 = G> <2 = B> <3 = P>\n");
+          statements.add("  -Channel P is tbe preset channel. Whenever you specify");
+          statements.add("  -a pattern and params on this channel, you are doing so");
+          statements.add("  -for a preset pattern that modulates all of the actual");
+          statements.add("  -color channels at once.");
+          finalized = false;
+        }
+        else if(command.substring(6, 13).equalsIgnoreCase("pattern")){
+          if(command.substring(13, 17).equalsIgnoreCase("help")){
+            statements.add("  -List of commands for use extending pattern:");
+            statements.add("  integers <0-10>: Describes the pattern ascribed to that");
+            statements.add("                   value of the pattern byte.");
+            finalized = false;
+          }
+          switch(command.charAt(13)){
+            case '0': statements.add("  -Flash is a strobing flash. Don't be a jerk and");
+                      statements.add("  -set this to a fast pace.");
+                      break;
+            case '1': if(command.charAt(14) == '0'){
+                      statements.add("  -Zero cosine is a cosine function that");
+                      statements.add("  -is not adjusted for negativity. Hence it");
+                      statements.add("  -has an extended period of zero brightness.");
+                    }
+                    else{
+                      statements.add("  -Sine is a squared sine wave, allowing for");
+                      statements.add("  -a smooth transition between maximum and");
+                      statements.add("  -minimum brightness.");
+                    }
+                    break;
+            case '2': statements.add("  -Cosine is a squared cosine wave, allowing for");
+                    statements.add("  -a smooth transition between maximum and");
+                    statements.add("  -minimum brightness.");
+                    break;
+            case '3': statements.add("  -Ramp is an ascending saw wave.");
+                    break;
+            case '4': statements.add("  -Reverse is a  descending saw wave.");
+                    break;
+            case '5': statements.add("  -Absolute sine is a sine function whose");
+                    statements.add("  -negativity is adjusted for by taking the");
+                    statements.add("  -absolute value of the function.");
+                    break;
+            case '6': statements.add("  -Absolute cosine is a cosine function");
+                    statements.add("  -whose negativity is adjusted for by");
+                    statements.add("  -taking the absolute value of the");
+                    statements.add("  -function.");
+                    break;
+            case '7': statements.add("  -Random randomly jumps to a");
+                    statements.add("  -brightness level between the");
+                    statements.add("  -specified maxiumum and minumum level");
+                    statements.add("  -for a length of time between the specified");
+                    statements.add("  -maximum and minimum length of time.");
+                    break;
+            case '8': statements.add("  -Full simply stays at a constant level.");
+                    break;
+            case '9': statements.add("  -Zero sine is a sine function that");
+                    statements.add("  -is not adjusted for negativity. Hence it");
+                    statements.add("  -has an extended period of zero brightness.");
+                    break;
+            default:statements.add("  -The pattern is the behavior of the lights on the");
+                    statements.add("  -selected channel. If on channel <3> the pattern");
+                    statements.add("  -value is used to select the preset.");
+                    statements.add("  -Patterns:");
+                    statements.add("  -0:  Flash");
+                    statements.add("  -1:  Sine");
+                    statements.add("  -2:  Cosine");
+                    statements.add("  -3:  Ramp");
+                    statements.add("  -4:  Reverse Ramp");
+                    statements.add("  -5:  Absolute Sine");
+                    statements.add("  -6:  Absolute Cosine");
+                    statements.add("  -7:  Random");
+                    statements.add("  -8:  Full");
+                    statements.add("  -9:  Zero Sine");
+                    statements.add("  -10: Zero Cosine");
+                    break;
+          }
+          finalized = false;
+        }
+        
+        else if(command.substring(6, 11).equalsIgnoreCase("param")){
+          if(command.substring(11, 15).equalsIgnoreCase("help")){
+            statements.add("  -List of commands for use extending param:");
+            statements.add("  integers <0-4>:  Describes the parameter's use with");
+            statements.add("                   each pattern.");
+          }
+          if(command.charAt(11) == '1'){
+            statements.add("  -Pattern[pattern value]: Effect");
+            statements.add("  -Flash[0]              : Maximum brightness");
+            statements.add("  -Sine[1]               : Maximum brightness");
+            statements.add("  -Cosine[2]             : Maximum brightness");
+            statements.add("  -Ramp[3]               : Maximum brightness");
+            statements.add("  -Reverse Ramp[4]       : Maximum brightness");
+            statements.add("  -Absolute Sine[5]      : Maximum brightness");
+            statements.add("  -Absolute Cosine[6]    : Maximum brightness");
+            statements.add("  -Random[7]             : Maximum brightness");
+            statements.add("  -Full[8]               : Brightness");
+            statements.add("  -Zero Sine[9]          : Maximum brightness");
+            statements.add("  -Zero Cosine[10]       : Maximum brightness");
+          }
+          else if(command.charAt(11) == '2'){
+            statements.add("  -Pattern[pattern value]: Effect");
+            statements.add("  -Flash[0]              : Minimum brightness");
+            statements.add("  -Sine[1]               : Minimum brightness");
+            statements.add("  -Cosine[2]             : Minimum brightness");
+            statements.add("  -Ramp[3]               : Minimum brightness");
+            statements.add("  -Reverse Ramp[4]       : Minimum brightness");
+            statements.add("  -Absolute Sine[5]      : Minimum brightness");
+            statements.add("  -Absolute Cosine[6]    : Minimum brightness");
+            statements.add("  -Random[7]             : Minimum brightness");
+            statements.add("  -Full[8]               : Unused");
+            statements.add("  -Zero Sine[9]          : Speed");
+            statements.add("  -Zero Cosine[10]       : Speed");
+          }
+          else if(command.charAt(11) == '3'){
+            statements.add("  -Pattern[pattern value]: Effect");
+            statements.add("  -Flash[0]              : Speed");
+            statements.add("  -Sine[1]               : Speed");
+            statements.add("  -Cosine[2]             : Speed");
+            statements.add("  -Ramp[3]               : Speed");
+            statements.add("  -Reverse Ramp[4]       : Speed");
+            statements.add("  -Absolute Sine[5]      : Speed");
+            statements.add("  -Absolute Cosine[6]    : Speed");
+            statements.add("  -Random[7]             : Minimum time at brightness");
+            statements.add("  -Full[8]               : Unused");
+            statements.add("  -Zero Sine[9]          : Unused");
+            statements.add("  -Zero Cosine[10]       : Unused");
+          }
+          else if(command.charAt(11) == '4'){
+            statements.add("  -Pattern[pattern value]: Effect");
+            statements.add("  -Flash[0]              : Unused");
+            statements.add("  -Sine[1]               : Unused");
+            statements.add("  -Cosine[2]             : Unused");
+            statements.add("  -Ramp[3]               : Unused");
+            statements.add("  -Reverse Ramp[4]       : Unused");
+            statements.add("  -Absolute Sine[5]      : Unused");
+            statements.add("  -Absolute Cosine[6]    : Unused");
+            statements.add("  -Random[7]             : Maximum time at brightness");
+            statements.add("  -Full[8]               : Unused");
+            statements.add("  -Zero Sine[9]          : Unused");
+            statements.add("  -Zero Cosine[10]       : Unused");
+          }
+          else{
+            statements.add("  -The four parameter bytes are the parameters used\n");
+            statements.add("  -to personalize the chosen pattern on the chosen\n");
+            statements.add("  -channel.");
+          }
+          finalized = false;
+        }
+        else if(command.substring(6, 12).equalsIgnoreCase("preset")){
+          switch(command.charAt(12)){
+            case '0': statements.add("  -Police is a pattern that flashes from red to blue.");
+                      statements.add("  -Green remains at a steady level to increase brightness.");
+                      break;
+            case '1': statements.add("  -Lava shifts between red and yellow through orange,");
+                      statements.add("  -similar to how stereotypical lava would glow.");
+                      break;
+            case '2': statements.add("  -Ocean fades between blue and white, emulating the");
+                      statements.add("  -crests, troughs and clear blue sky during a day at the");
+                      statements.add("  -beach. Or your desktop background.");
+                      break;
+            case '3': statements.add("  -Forest shifts between the blue of the sky, the green");
+                      statements.add("  -of the trees, and the white of the clouds of your");
+                      statements.add("  -1998 exhibition to South America.");
+                      break;
+            case '4': statements.add("  -A pulsing light red color that can, and should, be");
+                      statements.add("  -used for \"emergencies.\"");
+                      break;
+            case '5': statements.add("  -Rainbow fades through the colors of the rainbow.");
+                      statements.add("  -What did you expect; skittles?");
+                      break;
+            case '6': statements.add("  -Darkness pulsates through every hue one can");
+                      statements.add("  -haphazardly call purple.");
+                      statements.add("  -\"Darkness is one of my favorite presets.\"");
+                      statements.add("  -Abraham Lincoln");
+                      break;
+            case '7': statements.add("  -RGB Spin cycles between full red,");
+                      statements.add("  -full green,");
+                      statements.add("  -and,");
+                      statements.add("  -full blue.");
+                      break;
+            case '8': statements.add("  -By nature of the L.E.D.s color(255, 255, 255)");
+                      statements.add("  -is not a perfect white. This produces a white that");
+                      statements.add("  -is adjusted for the fact that the maximum of each");
+                      statements.add("  -channel is not equal in brightness.");
+                      break;
+            case '9': statements.add("  -Random is just that--random. And in all the");
+                      statements.add("  -possible ways.");
+                      break;
+            default:  statements.add("  -Presets are patterns that control all three channels.");
+                      statements.add("  -They are accessed by parsing a value to channel 3.");
+                      statements.add("  -(Note that channel 3 is the FOURTH channel.)");
+                      statements.add("  -0: Police");
+                      statements.add("  -1: Lava");
+                      statements.add("  -2: Ocean");
+                      statements.add("  -3: Forest");
+                      statements.add("  -4: Defcon");
+                      statements.add("  -5: Rainbow");
+                      statements.add("  -6: Dark");
+                      statements.add("  -7: RGB Spin");
+                      statements.add("  -8: White");
+                      statements.add("  -9: Random");
+                      break;
+          }
+          finalized = false;
+        }
+        else{
+          statements.add("  -9 bytes: { [153][bank][channel][pattern][param 1]");
+          statements.add("  -[param 2][param 3][param 4][checksum]");
+          statements.add("  -When sending your own signal, include each byte in");
+          statements.add("  -brackets. Also, ignore typing the checksum.");
+          finalized = false;
+        }
+      }
+
+            
+      if(command.substring(0, 4).equalsIgnoreCase("help")){
+        statements.add("  -List of commands:");
+        statements.add("  -\"clear\"      : Clears the buffer of all commands and server updates.");
+        statements.add("  -\"comsyn\"     : Gives discription of the internal command syntax.");
+        statements.add("  -\"command:\"   : Allows one to parse a custom command to the server. *ADVANCED. *JANKY.");    
+        statements.add("  -\"genCommand\" : A scripted method of creating a custon command. Does the same thing");
+        statements.add("                    as \"command:\" but isn't janky. Don't be a dipshit and use the janky");
+        statements.add("                    option. It's your fault if something breaks because of it."); 
+      }
+       
+    
+      if(command.substring(0, 8).equalsIgnoreCase("command:")){
+        //Indices of the brackets of the command.
+        int[] bracketLocs = new int[16];
+        //Current index of bracketLocs.
+        int currentInd = 0;
+        
+        //The actual command.
+        byte[] customCommand = new byte[9];
+        
+        //Try to mark the indices of the brackets. 
+        try{
+          for(int i = 0; i < command.length(); i++){
+            if(command.charAt(i) == '[' || command.charAt(i) == ']'){
+              bracketLocs[currentInd] = i;
+              currentInd++;
+            }
+          }
+          //Fuck you if you didn't add enough brackets.
+          if(currentInd < 16){
+            statements.add("  *Invalid syntax.");
+          }
+          //Make the various bytes.
+          else{
+            for(int i = 0; i < currentInd; i+=2){
+              customCommand[(int)i/2] = (byte)Integer.parseInt(command.substring(bracketLocs[i], bracketLocs[i+1]));
+            }
+            //listener.write(new String(customCommand));
+            statements.add("  *Successfully sent.");
+          }
+          
+        }
+        catch(Exception e){
+          statements.add("  *Invalid syntax.");
+        }
+      }
+      ///////////////////////////////////////////////////////////////
+      //GEN COMMAND GEN COMMAND GEN COMMAND GEN COMMAND GEN COMMAND//
+      ///////////////////////////////////////////////////////////////
+      
+      if(gcState > 0){
+        switch(gcState){
+          case 1: statements.add("  *Enter first continuity byte:");
+                  gcState = 2;
+                  break;
+          case 2: if(finalized){
+                    try{
+                      contA = (byte)Integer.parseInt(command.substring(0, 3));
+                      if(contA == 153){
+                        statements.add("  *Improper input. Enter continuity byte, or \"genCommand q\" to quit.");
+                      }
+                      else{
+                        gcState = 3;
+                      }
+                    }
+                    catch(Exception e){
+                      statements.add("  *Improper input. Enter continuity byte, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 3: statements.add("  *Enter bank value. Remember that these do expand beyond 0 and 1.");
+                  gcState = 4;
+                  break;
+          case 4: if(finalized){
+                    try{
+                      bank = (byte)Integer.parseInt(command.substring(0, 1));
+                      gcState = 5;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter chosen bank, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 5: statements.add("  *Enter chosen channel. The channel byte ranges from 0 to 3.");
+                  gcState = 6;
+                  break;
+          case 6: if(finalized){
+                    try{
+                      chan = (byte)Integer.parseInt(command.substring(0, 1));
+                      gcState = 7;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter chosen channel-, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 7: statements.add("  *Enter chosen pattern. Remember that they differ when on channel 3.");
+                  gcState = 8;
+                  break;
+          case 8: if(finalized){
+                    try{
+                      pat = (byte)Integer.parseInt(command.substring(0, 1));
+                      gcState = 9;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter chosen bank, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 9: statements.add("  *Enter that pattern's first parameter.");
+                  gcState = 10;
+                  break;
+          case 10:if(finalized){
+                    try{
+                      char[] chars = command.toCharArray();
+                      int firstDummyIndex = 0;
+                      while((int)command.charAt(firstDummyIndex) > 46 && (int)command.charAt(firstDummyIndex) < 58){
+                        firstDummyIndex++;
+                      }
+                      String p1 = command.substring(0, firstDummyIndex);
+                      param1 = (byte)Integer.parseInt(p1);
+                      gcState = 11;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter proper parameter value, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 11:statements.add("  *Enter that pattern's second parameter.");
+                  gcState = 12;
+                  break;
+          case 12:if(finalized){
+                    try{
+                      char[] chars = command.toCharArray();
+                      int firstDummyIndex = 0;
+                      while((int)command.charAt(firstDummyIndex) > 46 && (int)command.charAt(firstDummyIndex) < 58){
+                        firstDummyIndex++;
+                      }
+                      String p2 = command.substring(0, firstDummyIndex);
+                      param2 = (byte)Integer.parseInt(p2);
+                      gcState = 13;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter proper parameter value, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 13:statements.add("  *Enter that pattern's third parameter.");
+                  gcState = 14;
+                  break;
+          case 14:if(finalized){
+                    try{
+                      char[] chars = command.toCharArray();
+                      int firstDummyIndex = 0;
+                      while((int)command.charAt(firstDummyIndex) > 46 && (int)command.charAt(firstDummyIndex) < 58){
+                        firstDummyIndex++;
+                      }
+                      String p3 = command.substring(0, firstDummyIndex);
+                      param3 = (byte)Integer.parseInt(p3);
+                      gcState = 15;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter proper parameter value, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+          case 15:statements.add("  *Enter that pattern's fourth parameter.");
+                  gcState = 16;
+                  break;
+          case 16:if(finalized){
+                    try{
+                      char[] chars = command.toCharArray();
+                      int firstDummyIndex = 0;
+                      while((int)command.charAt(firstDummyIndex) > 46 && (int)command.charAt(firstDummyIndex) < 58){
+                        firstDummyIndex++;
+                      }
+                      String p4 = command.substring(0, firstDummyIndex);
+                      param4 = (byte)Integer.parseInt(p4);
+                      gcState = 17;
+                    }
+                    catch(Exception e){
+                      statements.add(" *Improper input. Enter proper parameter value, or \"genCommand q\" to quit.");
+                    }
+                  }
+                  break;
+         case 17:statements.add("  *BUILDING CHECKSUM...");
+                 checksum = (byte)((int)(contA+bank+chan+pat+param1+param2+param3+param4)/ (int)8);
+                 statements.add("  *Checksum = "+checksum);
+                 gcState = 18;
+                  
+                      
+                        
+                      
+                      
+        }
+      }
+    }
+    catch(Exception e){
+      //meh
+    }
+    finalized = false;
+  }
+  
+  //Only call this when you want to draw the window. And make sure it is the final
+  //call to a method that draws things.
+  public void handle(){
+    //Set the font.
+    textFont(consoleFont);
+    //Set the font size.
+    textSize(10);
+    //Trim down the buffer
+    while(statements.size() > 35){
+      statements.remove(0);
+    }
+    //Draw the overlay.
+    colorMode(RGB);
+    noStroke();
+    fill(60, 30);
+    rect(0, 0, width, 12*36+5);
+    //Draw the division between the console output and input.
+    strokeWeight(1);
+    stroke(50, 50, 255);
+    line(0, 12*35+4, width, 12*35+4);
+    stroke(255, 240, 0);
+    line(0, 12*35+3, width, 12*35+3);
+    
+    //Draw all the contents of the buffer into the console window.
+    fill(50, 50, 255);
+    noStroke();
+    for(int i = 0; i < statements.size(); i++){
+      text((String)statements.get(i), 6, (12*(i+1))+1);
+    }
+    fill(255);
+    noStroke();
+    for(int i = 0; i < statements.size(); i++){
+      text((String)statements.get(i), 5, 12*(i+1));
+    }
+    
+    fill(50, 50, 255);
+    //Draw the command prompt.
+    text("->", 5+1, (12*36)+1);
+    //Draw the current input.
+    text(input, 24+1, (12*36)+1);
+    fill(255, 240, 0);
+    //Draw the command prompt.
+    text("->", 5, 12*(36 ));
+    //Draw the current input.
+    text(input, 24, 12*36);    
+  }
+  
+  public boolean kitten(){
+    return kitten;
+  }
+  public void stopKitten(){
+    kitten = false;
+  }
+}
+    
+    
+    
+    
+    
+    
+    
