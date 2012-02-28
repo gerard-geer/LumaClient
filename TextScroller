@@ -1,0 +1,129 @@
+class TextScroller{
+  //This class is just what it says it is.
+  //Scrolls a string of text across the screen.
+  
+  //Original location.
+  float origx;
+  float origy;
+  
+  //Location of the string currently.
+  float locx;
+  float locy;
+  
+  //Font used.
+  PFont font;
+  
+  //Size of the font.
+  float fontsize;
+  
+  //Scroll speed in px.
+  float speed;
+  
+  //The length of the text string, in px.
+  float strLength;
+  
+  //We wait 60 frames before beginning to scroll.
+  //These variables are used in the timing.
+  boolean started;
+  int frameStarted;
+  
+  //The message string.
+  String message;
+  
+  public TextScroller(float locx, float locy, float strLength, float speed, String message, PFont font, float fontsize){
+    //Load in the things.
+    this.locx = locx;
+    this.locy = locy;
+    this.strLength = strLength;
+    this.message = message;
+    this.font = font;
+    this.fontsize = fontsize;
+    this.speed = speed;
+    
+    origx = locx;
+    origy = locy;
+  }
+  
+  public void handle(){
+    //Set the font.
+    textFont(font);
+    
+    //Set the font size.
+    textSize(fontsize);
+
+    //If the scroller has been started...
+    if(started){
+      //draw an anti-blur background.
+      fill(255);
+      rect(origx, origy, width, -fontsize+2);
+      
+      //Draw a background line.
+      if((frameCount-frameStarted)<45){
+        stroke(255-(frameCount-frameStarted));
+      }
+      else{
+        stroke(210);
+      }
+      strokeWeight(8);
+      line(origx, origy, width, origy);
+      noStroke();
+      
+      //If the user has had time to look at the first few words..
+      if(frameCount > frameStarted+60){
+        //Move the text to the left.
+        locx -= speed;
+        
+        //Draw the text's shadow.
+        fill(255);
+        text(message, locx+1, locy+1);
+        //Draw the text's highlight.
+        fill(0);
+        text(message, locx, locy);
+        
+        //If the text has moved off screen.
+        if(locx < -strLength){
+          locx = width;//Make it appear on the other side of the screen.
+        }
+      }
+      else{
+        //Draw the text's shadow.
+        fill(255);
+        text(message, locx+1, locy+1);
+        //Draw the text's highlight.
+        if((255/15)*(frameCount-frameStarted)<255)
+          fill(255-(255/15)*(frameCount-frameStarted));
+        else
+          fill(0);
+        text(message, locx, locy);
+      }
+    } 
+          
+      
+  }
+  
+  //Start the animation.
+  public void start(){
+    started = true;
+    locx = origx;
+    locy = origy;
+    frameStarted = frameCount;
+  }
+  
+  //Reset the scrolling location to original.
+  public void resetScroll(){
+    locx = origx;
+    locy = origy;
+  }
+  
+  //Stop and reset the animation.
+  public void stop(){
+    started = false;
+    locx = origx;
+    locy = origy;
+  }
+  
+  //Has the animation been started?
+  public boolean started(){
+    return started;
+  }
+}
